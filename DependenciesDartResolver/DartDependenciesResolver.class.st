@@ -5,7 +5,9 @@ Class {
 		'dartParser',
 		'flowGraph',
 		'rootFolder',
-		'packages'
+		'packages',
+		'links',
+		'nodes'
 	],
 	#category : #DependenciesDartResolver
 }
@@ -28,6 +30,33 @@ DartDependenciesResolver >> initialize [
 	dartParser := DartParser new.
 	flowGraph := MeFlowchartDiagram new.
 	packages := Dictionary new. 
+	"for flowgraph"
+	links := Dictionary new. 
+	nodes := Dictionary new. 
+]
+
+{ #category : #accessing }
+DartDependenciesResolver >> links [
+
+	^ links
+]
+
+{ #category : #accessing }
+DartDependenciesResolver >> links: anObject [
+
+	links := anObject
+]
+
+{ #category : #accessing }
+DartDependenciesResolver >> nodes [
+
+	^ nodes
+]
+
+{ #category : #accessing }
+DartDependenciesResolver >> nodes: anObject [
+
+	nodes := anObject
 ]
 
 { #category : #accessing }
@@ -51,23 +80,32 @@ DartDependenciesResolver >> resolveConfigurationUri: aString [
 
 { #category : #'private - resolver' }
 DartDependenciesResolver >> resolveDartFile: aFileReference [
-	|myFileNode imports link node baseName|
-
+	|myFileNode imports link node baseName |	
+	
 	
 	baseName := self getBaseName: (aFileReference asPath).
 	myFileNode := MeFCNode named: baseName.
-	self flowGraph addDefinition: myFileNode. 
+	
+	1 halt.
+	
+	
+	self flowGraph addDefinition: (nodes at: baseName ifAbsentPut: [ myFileNode ]). 
 	
 	"recupere les imports"
 	imports := (DartParser parseFile: aFileReference pathString asString)
 		           libraryImports.
+		
 	
 	"parcours les imports"
 	imports do: [ :imp | 
-		node := MeFCNode named: (self resolveConfigurationUri: (imp importSpecification configurableUri uri stringLiteralWithoutInterpolation value)) last. 
+		|name|
+		name :=  (self resolveConfigurationUri: (imp importSpecification configurableUri uri stringLiteralWithoutInterpolation value)) last.
+		node := MeFCNode named: name. 
 		link := MeFCLink newFromNode: myFileNode toNode: node.
 		link toArrowType: MeFCArrowHeadType new.
-		self flowGraph addDefinition: node; addDefinition: link.
+		self flowGraph 
+			addDefinition: (nodes at: name ifAbsentPut: [ node ]);
+			 addDefinition: (links at: (baseName , name) ifAbsentPut: [ link ])  .
 		 ]
 ]
 
